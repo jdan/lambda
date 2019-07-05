@@ -64,6 +64,7 @@ let () =
 
 let and_ = abstr ["a"; "b"] (app (Variable "a") [Variable "b"; fls])
 let or_ = abstr ["a"; "b"] (app (Variable "a") [tru; Variable "b"])
+let not_ = abstr ["a"] (app (Variable "a") [fls; tru])
 
 let () =
   assert (tru = (app and_ [tru; tru] |> beta));
@@ -75,3 +76,6 @@ let () =
   assert (tru = (app or_ [tru; fls] |> beta));
   assert (tru = (app or_ [fls; tru] |> beta));
   assert (fls = (app or_ [fls; fls] |> beta));
+
+  assert (fls = (Application (not_, tru) |> beta));
+  assert (tru = (Application (not_, fls) |> beta));
