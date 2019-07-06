@@ -27,6 +27,12 @@ let rec app = function
   | a::b::xs' -> app (Application (a, b) :: xs')
   | _ -> raise MultiApplicationException
 
+(* An incomplete alpha substitution that does not
+ * guard against variable captures.
+ *
+ * We'll be using combinators for most of our code,
+ * so no worries here.
+ *)
 let rec alpha a b = function
   | Variable v ->
     if v = a
