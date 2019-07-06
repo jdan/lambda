@@ -62,48 +62,44 @@ let () =
     assert (f = (app [fls; t; f] |> beta))
   )
 
-let and_ = abstr ["a"; "b"] (app [Variable "a"; Variable "b"; fls])
-let or_ = abstr ["a"; "b"] (app [Variable "a"; tru; Variable "b"])
-let not_ = abstr ["a"] (app [Variable "a"; fls; tru])
+let and_ a b = app [a; b; fls]
+let or_ a b = app [a; tru; b]
+let not_ a = app [a; fls; tru]
 
 let () =
-  assert (tru = (app [and_; tru; tru] |> beta));
-  assert (fls = (app [and_; tru; fls] |> beta));
-  assert (fls = (app [and_; fls; tru] |> beta));
-  assert (fls = (app [and_; fls; fls] |> beta));
+  assert (tru = (and_ tru tru |> beta));
+  assert (fls = (and_ tru fls |> beta));
+  assert (fls = (and_ fls tru |> beta));
+  assert (fls = (and_ fls fls |> beta));
 
-  assert (tru = (app [or_; tru; tru] |> beta));
-  assert (tru = (app [or_; tru; fls] |> beta));
-  assert (tru = (app [or_; fls; tru] |> beta));
-  assert (fls = (app [or_; fls; fls] |> beta));
+  assert (tru = (or_ tru tru |> beta));
+  assert (tru = (or_ tru fls |> beta));
+  assert (tru = (or_ fls tru |> beta));
+  assert (fls = (or_ fls fls |> beta));
 
-  assert (fls = (Application (not_, tru) |> beta));
-  assert (tru = (Application (not_, fls) |> beta))
+  assert (fls = (not_ tru |> beta));
+  assert (tru = (not_ fls |> beta))
 
 (* List operations *)
-let pair = abstr ["x"; "y"; "z"] (app [Variable "z"; Variable "x"; Variable "y"])
-let first = Abstraction ("p", Application (Variable "p", tru))
-let second = Abstraction ("p", Application (Variable "p", fls))
+let pair x y = Abstraction ("z", app [Variable "z"; x; y])
+let first p = Application (p, tru)
+let second p = Application(p, fls)
 
 (* represent a list as a pair where the
  * head is whether the list is nil, and the
  * tail is the list itself
- *)
-let nil = app [pair; tru; tru]
+*)
+let nil = pair tru tru
 let isnil = first
-let cons = abstr ["h"; "t"]
-    (app [ pair
-         ; fls
-         ; app [pair; Variable "h"; Variable "t"]
-         ])
-let head = Abstraction ("z", Application (first, (Application (second, Variable "z"))))
-let tail = Abstraction ("z", Application (second, (Application (second, Variable "z"))))
+let cons a b = pair fls (pair a b)
+let head p = first (second p)
+let tail p = second (second p)
 
 let () =
-  let ls = app [cons; Variable "a"; app [cons; Variable "b"; app [cons; Variable "c"; nil]]]
+  let ls = cons (Variable "a") (cons (Variable "b") (cons (Variable "c") nil))
   in (
-    assert (Variable "a" = (Application (head, ls) |> beta));
-    assert (Variable "b" = (Application (head, Application (tail, ls)) |> beta));
-    assert (Variable "c" = (Application (head, Application (tail, Application (tail, ls))) |> beta));
-    assert (tru = (Application (isnil, Application (head, Application (tail, Application (tail, Application (tail, ls))))) |> beta));
+    assert (Variable "a" = (head ls |> beta));
+    assert (Variable "b" = (head (tail ls) |> beta));
+    assert (Variable "c" = (head (tail (tail ls)) |> beta));
+    assert (tru = (isnil (head (tail (tail (tail ls)))) |> beta));
   )
