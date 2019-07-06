@@ -109,3 +109,39 @@ let () =
     assert (Variable "c" = (head (tail (tail ls)) |> beta));
     assert (tru = (isnil (head (tail (tail (tail ls)))) |> beta));
   )
+
+(* Church numerals *)
+let zero = abstr ["f"; "x"] (Variable "x")
+let succ n = abstr ["f"; "x"] (
+    let nfx = app [n; Variable "f"; Variable "x"]
+    in app [Variable "f"; nfx]
+  )
+let add m n = abstr ["f"; "x"] (
+    let nfx = app [n; Variable "f"; Variable "x"]
+    in app [m; Variable "f"; nfx]
+  )
+let mult m n = abstr ["f"; "x"] (
+    app [ m
+        ; app [n; Variable "f"]
+        ; Variable "x"
+        ]
+  )
+
+let () =
+  let two = succ (succ zero)
+  and three = succ (succ (succ zero))
+  and seven = succ (succ (succ (succ (succ (succ (succ zero))))))
+  and pair' = abstr ["x"; "y"; "z"] (app [Variable "z"; Variable "x"; Variable "y"])
+  in let cons' = abstr ["a"; "b"] (app [pair'; fls; app [pair'; Variable "a"; Variable "b"]])
+  in let f = Abstraction ("p", app [cons'; Variable "#"; Variable "p"])
+  in let rec len_of_lambda_list ls =
+       if beta (isnil ls) = tru
+       then 0
+       else 1 + (len_of_lambda_list (tail ls))
+  in (
+    assert (0 = (app [zero; f; nil] |> len_of_lambda_list));
+    assert (2 = (app [two; f; nil] |> len_of_lambda_list));
+    assert (5 = (app [add two three; f; nil] |> len_of_lambda_list));
+    assert (6 = (app [mult two three; f; nil] |> len_of_lambda_list));
+    assert (49 = (app [mult seven seven; f; nil] |> len_of_lambda_list));
+  )
