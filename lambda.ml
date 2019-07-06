@@ -22,10 +22,10 @@ let () =
   assert ("λx.λy.y" = (string_of_term fls));
 
 exception MultiApplicationException
-let rec app f = function
-  | [] -> raise MultiApplicationException
-  | x::[] -> Application (f, x)
-  | x::xs' -> app (Application (f, x)) xs'
+let rec app = function
+  | a::b::[] -> Application (a, b)
+  | a::b::xs' -> app (Application (a, b) :: xs')
+  | _ -> raise MultiApplicationException
 
 let rec alpha a b = function
   | Variable v ->
@@ -58,24 +58,24 @@ let () =
   let t = Variable "#t"
   and f = Variable "#f"
   in (
-    assert (t = (app tru [t; f] |> beta));
-    assert (f = (app fls [t; f] |> beta))
+    assert (t = (app [tru; t; f] |> beta));
+    assert (f = (app [fls; t; f] |> beta))
   )
 
-let and_ = abstr ["a"; "b"] (app (Variable "a") [Variable "b"; fls])
-let or_ = abstr ["a"; "b"] (app (Variable "a") [tru; Variable "b"])
-let not_ = abstr ["a"] (app (Variable "a") [fls; tru])
+let and_ = abstr ["a"; "b"] (app [Variable "a"; Variable "b"; fls])
+let or_ = abstr ["a"; "b"] (app [Variable "a"; tru; Variable "b"])
+let not_ = abstr ["a"] (app [Variable "a"; fls; tru])
 
 let () =
-  assert (tru = (app and_ [tru; tru] |> beta));
-  assert (fls = (app and_ [tru; fls] |> beta));
-  assert (fls = (app and_ [fls; tru] |> beta));
-  assert (fls = (app and_ [fls; fls] |> beta));
+  assert (tru = (app [and_; tru; tru] |> beta));
+  assert (fls = (app [and_; tru; fls] |> beta));
+  assert (fls = (app [and_; fls; tru] |> beta));
+  assert (fls = (app [and_; fls; fls] |> beta));
 
-  assert (tru = (app or_ [tru; tru] |> beta));
-  assert (tru = (app or_ [tru; fls] |> beta));
-  assert (tru = (app or_ [fls; tru] |> beta));
-  assert (fls = (app or_ [fls; fls] |> beta));
+  assert (tru = (app [or_; tru; tru] |> beta));
+  assert (tru = (app [or_; tru; fls] |> beta));
+  assert (tru = (app [or_; fls; tru] |> beta));
+  assert (fls = (app [or_; fls; fls] |> beta));
 
   assert (fls = (Application (not_, tru) |> beta));
   assert (tru = (Application (not_, fls) |> beta));
