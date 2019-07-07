@@ -126,6 +126,15 @@ let mult m n = abstr ["f"; "x"] (
         ; Variable "x"
         ]
   )
+let pred n =
+  let f = Abstraction
+      ( "p"
+      , let sp = second (Variable "p")
+        in pair sp (succ sp)
+      )
+  and zero = abstr ["f"; "x"] (Variable "x")
+  in let pc0 = pair zero zero
+  in first (app [n; f; pc0])
 
 let () =
   let two = succ (succ zero)
@@ -141,7 +150,7 @@ let () =
   in (
     assert (0 = (app [zero; f; nil] |> len_of_lambda_list));
     assert (2 = (app [two; f; nil] |> len_of_lambda_list));
-    assert (5 = (app [add two three; f; nil] |> len_of_lambda_list));
+    assert (4 = (app [pred (add two three); f; nil] |> len_of_lambda_list));
     assert (6 = (app [mult two three; f; nil] |> len_of_lambda_list));
     assert (49 = (app [mult seven seven; f; nil] |> len_of_lambda_list));
   )
