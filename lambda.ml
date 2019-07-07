@@ -32,7 +32,7 @@ let rec app = function
  *
  * We'll be using combinators for most of our code,
  * so no worries here.
- *)
+*)
 let rec alpha a b = function
   | Variable v ->
     if v = a
@@ -138,22 +138,20 @@ let pred n = abstr ["f"; "x"] (
       )
     in app [n; inner; ux; uu]
   )
+let iszero n = app [n; Abstraction ("x", fls); tru]
 
 let () =
   let two = succ (succ zero)
   and three = succ (succ (succ zero))
   and seven = succ (succ (succ (succ (succ (succ (succ zero))))))
-  and pair' = abstr ["x"; "y"; "z"] (app [Variable "z"; Variable "x"; Variable "y"])
-  in let cons' = abstr ["a"; "b"] (app [pair'; fls; app [pair'; Variable "a"; Variable "b"]])
-  in let f = Abstraction ("p", app [cons'; Variable "#"; Variable "p"])
-  in let rec len_of_lambda_list ls =
-       if beta (isnil ls) = tru
+  in let rec int_of_church_encoding n =
+       if tru = (iszero n |> beta)
        then 0
-       else 1 + (len_of_lambda_list (tail ls))
+       else 1 + (int_of_church_encoding (pred n))
   in (
-    assert (0 = (app [zero; f; nil] |> len_of_lambda_list));
-    assert (2 = (app [two; f; nil] |> len_of_lambda_list));
-    assert (5 = (app [add two three; f; nil] |> len_of_lambda_list));
-    assert (6 = (app [mult two three; f; nil] |> len_of_lambda_list));
-    assert (48 = (app [pred (mult seven seven); f; nil] |> len_of_lambda_list));
+    assert (0 = (int_of_church_encoding zero));
+    assert (2 = (int_of_church_encoding two));
+    assert (5 = (add two three |> int_of_church_encoding));
+    assert (6 = (mult two three |> int_of_church_encoding));
+    assert (48 = (pred (mult seven seven) |> int_of_church_encoding));
   )
