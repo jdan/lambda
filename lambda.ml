@@ -90,27 +90,42 @@ let () =
   assert (tru = (onot fls |> beta))
 
 (* List operations *)
-let pair x y = Abstraction ("z", app [Variable "z"; x; y])
-let first p = Application (p, tru)
-let second p = Application(p, fls)
+let pair = abstr ["x"; "y"; "z"]
+    (app [ Variable "z"
+         ; Variable "x"
+         ; Variable "y"
+         ])
+let opair x y = app [pair; x; y]
+let first = abstr ["p"] (app [Variable "p"; tru])
+let ofirst p = app [first; p]
+let second = abstr ["p"] (app [Variable "p"; fls])
+let osecond p = app [second; p]
 
 (* represent a list as a pair where the
  * head is whether the list is nil, and the
  * tail is the list itself
 *)
-let nil = pair tru tru
+let nil = opair tru tru
 let isnil = first
-let cons a b = pair fls (pair a b)
-let head p = first (second p)
-let tail p = second (second p)
+let oisnil = ofirst
+(* todo: show that opair (Variable "a") is not a safe operation
+ * and protect all ofn's from this
+ *)
+let cons = abstr ["a"; "b"] (app [pair; fls; app [pair; Variable "a"; Variable "b"]])
+let ocons a b = app [cons; a; b]
+let head = abstr ["p"] (app [first; app [second; Variable "p"]])
+let ohead p = app [head; p]
+let tail = abstr ["p"] (app [second; app [second; Variable "p"]])
+let otail p = app [tail; p]
 
 let () =
-  let ls = cons (Variable "a") (cons (Variable "b") (cons (Variable "c") nil))
+  (* let ls = ocons (Variable "a") (ocons (Variable "b") (ocons (Variable "c") nil)) => FAILS *)
+  let ls = ocons (Variable "#a") (ocons (Variable "#b") (ocons (Variable "#c") nil))
   in (
-    assert (Variable "a" = (head ls |> beta));
-    assert (Variable "b" = (head (tail ls) |> beta));
-    assert (Variable "c" = (head (tail (tail ls)) |> beta));
-    assert (tru = (isnil (head (tail (tail (tail ls)))) |> beta));
+    assert (Variable "#a" = (ohead ls |> beta));
+    assert (Variable "#b" = (ohead (otail ls) |> beta));
+    assert (Variable "#c" = (ohead (otail (otail ls)) |> beta));
+    assert (tru = (oisnil (ohead (otail (otail (otail ls)))) |> beta));
   )
 
 (* Church numerals *)
