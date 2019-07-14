@@ -130,20 +130,23 @@ let () =
 
 (* Church numerals *)
 let zero = abstr ["f"; "x"] (Variable "x")
-let succ n = abstr ["f"; "x"] (
-    let nfx = app [n; Variable "f"; Variable "x"]
+let succ = abstr ["n"; "f"; "x"] (
+    let nfx = app [Variable "n"; Variable "f"; Variable "x"]
     in app [Variable "f"; nfx]
   )
-let add m n = abstr ["f"; "x"] (
-    let nfx = app [n; Variable "f"; Variable "x"]
-    in app [m; Variable "f"; nfx]
+let osucc n = app [succ; n]
+let add = abstr ["m"; "n"; "f"; "x"] (
+    let nfx = app [Variable "n"; Variable "f"; Variable "x"]
+    in app [Variable "m"; Variable "f"; nfx]
   )
-let mult m n = abstr ["f"; "x"] (
-    app [ m
-        ; app [n; Variable "f"]
+let oadd m n = app [add; m; n]
+let mult = abstr ["m"; "n"; "f"; "x"] (
+    app [ Variable "m"
+        ; app [Variable "n"; Variable "f"]
         ; Variable "x"
         ]
   )
+let omult m n = app [mult; m; n]
 let pred = abstr ["n"; "f"; "x"] (
     let ux = Abstraction ("u", Variable "x")
     and uu = Abstraction ("u", Variable "u")
@@ -159,25 +162,26 @@ let pred = abstr ["n"; "f"; "x"] (
 
 let opred n = app [pred; n]
 
-(* this isn't exactly right, "v" has to be carefully chosen *)
-let minus a b = app [b; pred; a]
-let iszero n = app [n; Abstraction ("x", fls); tru]
+let minus = abstr ["a"; "b"] (app [Variable "b"; pred; Variable "a"])
+let ominus a b = app [minus; a; b]
+let iszero = abstr ["n"] (app [Variable "n"; Abstraction ("x", fls); tru])
+let oiszero n = app [iszero; n]
 
 let () =
-  let two = succ (succ zero)
-  and three = succ (succ (succ zero))
-  and seven = succ (succ (succ (succ (succ (succ (succ zero))))))
+  let two = osucc (osucc zero)
+  and three = osucc (osucc (osucc zero))
+  and seven = osucc (osucc (osucc (osucc (osucc (osucc (osucc zero))))))
   in let rec int_of_church_encoding n =
-       if tru = (iszero n |> beta)
+       if tru = (oiszero n |> beta)
        then 0
        else 1 + (int_of_church_encoding (opred n))
   in (
     assert (0 = (int_of_church_encoding zero));
     assert (2 = (int_of_church_encoding two));
-    assert (5 = (add two three |> int_of_church_encoding));
-    assert (6 = (mult two three |> int_of_church_encoding));
-    assert (48 = (opred (mult seven seven) |> int_of_church_encoding));
-    assert (4 = (minus seven three |> int_of_church_encoding));
+    assert (5 = (oadd two three |> int_of_church_encoding));
+    assert (6 = (omult two three |> int_of_church_encoding));
+    assert (48 = (opred (omult seven seven) |> int_of_church_encoding));
+    assert (4 = (ominus seven three |> int_of_church_encoding));
   )
 
 let rec js_of_term = function
