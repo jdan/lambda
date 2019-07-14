@@ -135,16 +135,13 @@ let succ = abstr ["n"; "f"; "x"] (
     in app [Variable "f"; nfx]
   )
 let osucc n = app [succ; n]
-let add = abstr ["m"; "n"; "f"; "x"] (
-    let nfx = app [Variable "n"; Variable "f"; Variable "x"]
-    in app [Variable "m"; Variable "f"; nfx]
-  )
+(* apply `succ` m times to n *)
+let add = abstr ["m"; "n"] (app [Variable "m"; succ; Variable "n"])
 let oadd m n = app [add; m; n]
-let mult = abstr ["m"; "n"; "f"; "x"] (
-    app [ Variable "m"
-        ; app [Variable "n"; Variable "f"]
-        ; Variable "x"
-        ]
+(* apply "add n" m times to 0 *)
+let mult = abstr ["m"; "n"] (
+    let addn = abstr ["m"] (app [Variable "n"; succ; Variable "m"])
+    in app [Variable "m"; addn; zero]
   )
 let omult m n = app [mult; m; n]
 let pred = abstr ["n"; "f"; "x"] (
@@ -159,11 +156,12 @@ let pred = abstr ["n"; "f"; "x"] (
       )
     in app [Variable "n"; inner; ux; uu]
   )
-
 let opred n = app [pred; n]
 
+(* apply `pred` b times to a *)
 let minus = abstr ["a"; "b"] (app [Variable "b"; pred; Variable "a"])
 let ominus a b = app [minus; a; b]
+
 let iszero = abstr ["n"] (app [Variable "n"; Abstraction ("x", fls); tru])
 let oiszero n = app [iszero; n]
 
