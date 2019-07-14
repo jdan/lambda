@@ -68,23 +68,26 @@ let () =
     assert (f = (app [fls; t; f] |> beta))
   )
 
-let and_ a b = app [a; b; fls]
-let or_ a b = app [a; tru; b]
-let not_ a = app [a; fls; tru]
+let and_ = abstr ["a"; "b"] (app [Variable "a"; Variable "b"; fls])
+let oand a b = app [and_; a; b]
+let or_ = abstr ["a"; "b"] (app [Variable "a"; tru; Variable "b"])
+let oor a b = app [or_; a; b]
+let not_ = abstr ["a"] (app [Variable "a"; fls; tru])
+let onot a = app [not_; a]
 
 let () =
-  assert (tru = (and_ tru tru |> beta));
-  assert (fls = (and_ tru fls |> beta));
-  assert (fls = (and_ fls tru |> beta));
-  assert (fls = (and_ fls fls |> beta));
+  assert (tru = (oand tru tru |> beta));
+  assert (fls = (oand tru fls |> beta));
+  assert (fls = (oand fls tru |> beta));
+  assert (fls = (oand fls fls |> beta));
 
-  assert (tru = (or_ tru tru |> beta));
-  assert (tru = (or_ tru fls |> beta));
-  assert (tru = (or_ fls tru |> beta));
-  assert (fls = (or_ fls fls |> beta));
+  assert (tru = (oor tru tru |> beta));
+  assert (tru = (oor tru fls |> beta));
+  assert (tru = (oor fls tru |> beta));
+  assert (fls = (oor fls fls |> beta));
 
-  assert (fls = (not_ tru |> beta));
-  assert (tru = (not_ fls |> beta))
+  assert (fls = (onot tru |> beta));
+  assert (tru = (onot fls |> beta))
 
 (* List operations *)
 let pair x y = Abstraction ("z", app [Variable "z"; x; y])
@@ -126,7 +129,7 @@ let mult m n = abstr ["f"; "x"] (
         ; Variable "x"
         ]
   )
-let pred n = abstr ["f"; "x"] (
+let pred = abstr ["n"; "f"; "x"] (
     let ux = Abstraction ("u", Variable "x")
     and uu = Abstraction ("u", Variable "u")
     and inner = abstr ["g"; "h"] (
@@ -136,8 +139,13 @@ let pred n = abstr ["f"; "x"] (
                                   )
                     )
       )
-    in app [n; inner; ux; uu]
+    in app [Variable "n"; inner; ux; uu]
   )
+
+let opred n = app [pred; n]
+
+(* this isn't exactly right, "v" has to be carefully chosen *)
+let minus a b = app [b; pred; a]
 let iszero n = app [n; Abstraction ("x", fls); tru]
 
 let () =
@@ -147,11 +155,33 @@ let () =
   in let rec int_of_church_encoding n =
        if tru = (iszero n |> beta)
        then 0
-       else 1 + (int_of_church_encoding (pred n))
+       else 1 + (int_of_church_encoding (opred n))
   in (
     assert (0 = (int_of_church_encoding zero));
     assert (2 = (int_of_church_encoding two));
     assert (5 = (add two three |> int_of_church_encoding));
     assert (6 = (mult two three |> int_of_church_encoding));
-    assert (48 = (pred (mult seven seven) |> int_of_church_encoding));
+    assert (48 = (opred (mult seven seven) |> int_of_church_encoding));
+    assert (4 = (minus seven three |> int_of_church_encoding));
   )
+
+let rec js_of_term = function
+  | Variable v -> v
+  | Application (a, b) ->
+    let a' = js_of_term a
+    and b' = js_of_term b
+    in "(" ^ a' ^ ")(" ^ b' ^ ")"
+  | Abstraction (v, body) ->
+    v ^ " => " ^ (js_of_term body)
+
+(*
+let () =
+  (* let seven = succ (succ (succ (succ (succ (succ (succ zero)))))
+   * in pred (mult seven seven) |> beta |> js_of_term |> print_endline;
+   *)
+
+  let js_0 = Variable "0"
+  and js_1 = Variable "1"
+  in let ls = cons js_0 (cons js_1 nil)
+  in head (tail ls) |> js_of_term |> print_endline;
+*)
