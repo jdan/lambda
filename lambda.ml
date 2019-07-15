@@ -110,13 +110,16 @@ let isnil = first
 let oisnil = ofirst
 (* todo: show that opair (Variable "a") is not a safe operation
  * and protect all ofn's from this
- *)
+*)
 let cons = abstr ["a"; "b"] (app [pair; fls; app [pair; Variable "a"; Variable "b"]])
 let ocons a b = app [cons; a; b]
 let head = abstr ["p"] (app [first; app [second; Variable "p"]])
 let ohead p = app [head; p]
 let tail = abstr ["p"] (app [second; app [second; Variable "p"]])
 let otail p = app [tail; p]
+
+let if_ = abstr ["x"; "y"; "z"] (app [Variable "x"; Variable "y"; Variable "z"])
+let oif x y z = app [if_; x; y; z]
 
 let () =
   (* let ls = ocons (Variable "a") (ocons (Variable "b") (ocons (Variable "c") nil)) => FAILS *)
@@ -165,14 +168,20 @@ let ominus a b = app [minus; a; b]
 let iszero = abstr ["n"] (app [Variable "n"; Abstraction ("x", fls); tru])
 let oiszero n = app [iszero; n]
 
+let rec int_of_church_encoding n =
+  if tru = (oiszero n |> beta)
+  then 0
+  else 1 + (int_of_church_encoding (opred n))
+
+let rec church_encoding_of_int n =
+  if n = 0
+  then zero
+  else osucc (church_encoding_of_int (n - 1))
+
 let () =
   let two = osucc (osucc zero)
   and three = osucc (osucc (osucc zero))
   and seven = osucc (osucc (osucc (osucc (osucc (osucc (osucc zero))))))
-  in let rec int_of_church_encoding n =
-       if tru = (oiszero n |> beta)
-       then 0
-       else 1 + (int_of_church_encoding (opred n))
   in (
     assert (0 = (int_of_church_encoding zero));
     assert (2 = (int_of_church_encoding two));
@@ -182,6 +191,30 @@ let () =
     assert (4 = (ominus seven three |> int_of_church_encoding));
   )
 
+let y =
+  let xfxx =
+    Abstraction
+      ( "x"
+      , Application
+          ( Variable "f"
+          , Application (Variable "x", Variable "x")
+          )
+      )
+  in Abstraction ("f", Application (xfxx, xfxx))
+
+let fact =
+  let inner = abstr ["fib"; "n"] (
+      app
+        [ (oiszero (Variable "n"))
+        ; (osucc zero)
+        ; (osucc (osucc zero))
+        ]
+    )
+  in app [y; inner]
+
+let () =
+  app [fact; church_encoding_of_int 0] |> beta |> int_of_church_encoding |> string_of_int |> print_endline
+
 let rec js_of_term = function
   | Variable v -> v
   | Application (a, b) ->
@@ -190,15 +223,3 @@ let rec js_of_term = function
     in "(" ^ a' ^ ")(" ^ b' ^ ")"
   | Abstraction (v, body) ->
     v ^ " => " ^ (js_of_term body)
-
-(*
-let () =
-  (* let seven = succ (succ (succ (succ (succ (succ (succ zero)))))
-   * in pred (mult seven seven) |> beta |> js_of_term |> print_endline;
-   *)
-
-  let js_0 = Variable "0"
-  and js_1 = Variable "1"
-  in let ls = cons js_0 (cons js_1 nil)
-  in head (tail ls) |> js_of_term |> print_endline;
-*)
