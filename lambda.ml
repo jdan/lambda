@@ -202,18 +202,53 @@ let y =
       )
   in Abstraction ("f", Application (xfxx, xfxx))
 
+(* Our language is eager, so we'll need the Z-combinator *)
+let z =
+  let vxxv =
+    Abstraction
+      ( "v"
+      , app [Variable "x"; Variable "x"; Variable "v"]
+      )
+  in let branch =
+       Abstraction
+         ( "x"
+         , Application (Variable "f", vxxv)
+         )
+  in Abstraction
+    ( "f"
+    , Application (branch, branch)
+    )
+
 let fact =
   let inner = abstr ["fib"; "n"] (
       app
-        [ (oiszero (Variable "n"))
-        ; (osucc zero)
-        ; (osucc (osucc zero))
+        (* might need an if thing *)
+        [ oiszero (Variable "n")
+        ; Abstraction
+            (  "_"
+            , osucc zero
+            )
+        ; Abstraction
+            ( "_"
+            , omult
+                (Variable "n")
+                (Application (Variable "fib", opred (Variable "n")))
+            )
+        ; Variable "_"
         ]
     )
-  in app [y; inner]
+  in app [z; inner]
 
 let () =
-  app [fact; church_encoding_of_int 0] |> beta |> int_of_church_encoding |> string_of_int |> print_endline
+  app [fact; church_encoding_of_int 5]
+  |> string_of_term
+  |> print_endline;
+
+  app [fact; church_encoding_of_int 5]
+  |> beta
+  |> int_of_church_encoding
+  |> string_of_int
+  |> print_endline
 
 let rec js_of_term = function
   | Variable v -> v
