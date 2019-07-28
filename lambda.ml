@@ -226,7 +226,7 @@ let z =
     )
 
 let fact =
-  let inner = abstr ["fib"; "n"] (
+  let inner = abstr ["fact"; "n"] (
       app
         (* might need an if thing *)
         [ oiszero (Variable "n")
@@ -238,7 +238,7 @@ let fact =
             ( "_"
             , omult
                 (Variable "n")
-                (Application (Variable "fib", opred (Variable "n")))
+                (Application (Variable "fact", opred (Variable "n")))
             )
         ; Abstraction ("x", Variable "x")
         ]
@@ -258,10 +258,10 @@ let () =
   app [fact; church_encoding_of_int 5]
   |> string_of_term
   |> print_endline;
-  (* ((λf.(λx.(f λv.((x x) v)) λx.(f λv.((x x) v))) λfib.λn
+  (* ((λf.(λx.(f λv.((x x) v)) λx.(f λv.((x x) v))) fact.λn
      .((((λn.((n λx.λx.λy.y) λx.λy.x) n) λ_.(λn.λf.λx.(f ((
      n f) x)) λf.λx.x)) λ_.((λm.λn.((m λm.((n λn.λf.λx.(f (
-     (n f) x))) m)) λf.λx.x) n) (fib (λn.λf.λx.(((n λg.λh.(
+     (n f) x))) m)) λf.λx.x) n) (fact (λn.λf.λx.(((n λg.λh.(
      h (g f))) λu.x) λu.u) n)))) λx.x)) λf.λx.(f (f (f (f (
      f x))))))
   *)
@@ -277,10 +277,10 @@ let () =
   |> js_of_term
   |> print_endline;
   (* ((f => (x => (f)(v => ((x)(x))(v)))(x => (f)(v => ((x)(
-     x))(v))))(fib => n => ((((n => ((n)(x => x => y => y))(
+     x))(v))))(fact => n => ((((n => ((n)(x => x => y => y))(
      x => y => x))(n))(_ => (n => f => x => (f)(((n)(f))(x))
      )(f => x => x)))(_ => ((m => n => ((m)(m => ((n)(n =>
-     f => x => (f)(((n)(f))(x))))(m)))(f => x => x))(n))((fib)
+     f => x => (f)(((n)(f))(x))))(m)))(f => x => x))(n))((fact)
      ((n => f => x => (((n)(g => h => (h)((g)(f))))(u => x))
      (u => u))(n)))))(x => x)))(f => x => (f)((f)((f)((f)((f
      )(x))))))
